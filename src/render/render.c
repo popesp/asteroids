@@ -1,12 +1,7 @@
 #include	"render.h"
 
 #include	<GL/glut.h>
-#include	"../app.h"
-#include	"../global.h"
 #include	"shader.h"
-
-
-#include	<stdio.h>
 
 
 static int vertsize[4] = {
@@ -105,19 +100,19 @@ int renderer_initshaders(struct renderer* r)
 	
 	// initialize shaders
 	if (!(wirevert = shader_create(RENDER_SHADER_WIREVERT, SHADER_VERTEX)))
-		return FAILURE;
+		return 0;
 	if (!(wirefrag = shader_create(RENDER_SHADER_WIREFRAG, SHADER_FRAGMENT)))
-		return FAILURE;
+		return 0;
 	if (!(meshvert = shader_create(RENDER_SHADER_MESHVERT, SHADER_VERTEX)))
-		return FAILURE;
+		return 0;
 	if (!(meshfrag = shader_create(RENDER_SHADER_MESHFRAG, SHADER_FRAGMENT)))
-		return FAILURE;
+		return 0;
 	
 	// link programs
 	if (!(r->gl_wireid = shader_program(wirevert, wirefrag)))
-		return FAILURE;
+		return 0;
 	if (!(r->gl_meshid = shader_program(meshvert, meshfrag)))
-		return FAILURE;
+		return 0;
 	
 	// bind attribute locations
 	glBindAttribLocation(r->gl_wireid, RENDER_ATTRIB_POS, "vertpos");

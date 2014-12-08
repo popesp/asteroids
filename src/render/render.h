@@ -26,9 +26,6 @@
 #define	RENDER_FLAGS_DYNAMIC	0x01
 
 
-struct app;
-
-
 struct renderable
 {
 	int gl_drawmode;
