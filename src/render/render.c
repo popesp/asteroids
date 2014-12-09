@@ -4,13 +4,11 @@
 #include	"shader.h"
 
 
-static int vertsize[4] = {
-	RENDER_ATTRIBSIZE_POS + RENDER_ATTRIBSIZE_COL,							// points
-	RENDER_ATTRIBSIZE_POS + RENDER_ATTRIBSIZE_COL,							// lines
-	RENDER_ATTRIBSIZE_POS + RENDER_ATTRIBSIZE_COL,							// mesh
+static int vertsize[2] = {
+	RENDER_ATTRIBSIZE_POS + RENDER_ATTRIBSIZE_COL,							// solid
 	RENDER_ATTRIBSIZE_POS + RENDER_ATTRIBSIZE_NOR + RENDER_ATTRIBSIZE_TEX};	// textured
 
-static int shader[4];
+static int shader[2];
 
 static inline void attrib(int index, int size, int vsize, int offs)
 {
@@ -31,13 +29,7 @@ void renderable_init(struct renderable* r, int gl_drawmode, unsigned char type, 
 	
 	switch (type)
 	{
-		case RENDER_TYPE_POINTS:
-		case RENDER_TYPE_LINES:
-			attrib(RENDER_ATTRIB_POS, RENDER_ATTRIBSIZE_POS, vertsize[type], 0);
-			attrib(RENDER_ATTRIB_COL, RENDER_ATTRIBSIZE_COL, vertsize[type], RENDER_ATTRIBSIZE_POS);
-			break;
-		
-		case RENDER_TYPE_MESH:
+		case RENDER_TYPE_SOLID:
 			attrib(RENDER_ATTRIB_POS, RENDER_ATTRIBSIZE_POS, vertsize[type], 0);
 			attrib(RENDER_ATTRIB_COL, RENDER_ATTRIBSIZE_COL, vertsize[type], RENDER_ATTRIBSIZE_POS);
 			break;
@@ -93,42 +85,42 @@ void renderable_render(struct renderable* r, float* transform)
 }
 
 
-int renderer_initshaders(struct renderer* r)
+int renderer_init(struct renderer* r)
 {
-	int wirevert, wirefrag;
-	int meshvert, meshfrag;
+	int solidvert, solidfrag;
+	int txtrdvert, txtrdfrag;
 	
 	// initialize shaders
-	if (!(wirevert = shader_create(RENDER_SHADER_WIREVERT, SHADER_VERTEX)))
+	if (!(solidvert = shader_create(RENDER_SHADER_SOLIDVERT, SHADER_VERTEX)))
 		return 0;
-	if (!(wirefrag = shader_create(RENDER_SHADER_WIREFRAG, SHADER_FRAGMENT)))
+	if (!(solidfrag = shader_create(RENDER_SHADER_SOLIDFRAG, SHADER_FRAGMENT)))
 		return 0;
-	if (!(meshvert = shader_create(RENDER_SHADER_MESHVERT, SHADER_VERTEX)))
+	if (!(txtrdvert = shader_create(RENDER_SHADER_TXTRDVERT, SHADER_VERTEX)))
 		return 0;
-	if (!(meshfrag = shader_create(RENDER_SHADER_MESHFRAG, SHADER_FRAGMENT)))
+	if (!(txtrdfrag = shader_create(RENDER_SHADER_TXTRDFRAG, SHADER_FRAGMENT)))
 		return 0;
 	
 	// link programs
-	if (!(r->gl_wireid = shader_program(wirevert, wirefrag)))
+	if (!(r->gl_solidid = shader_program(solidvert, solidfrag)))
 		return 0;
-	if (!(r->gl_meshid = shader_program(meshvert, meshfrag)))
+	if (!(r->gl_txtrdid = shader_program(txtrdvert, txtrdfrag)))
 		return 0;
 	
 	// bind attribute locations
-	glBindAttribLocation(r->gl_wireid, RENDER_ATTRIB_POS, "vertpos");
-	glBindAttribLocation(r->gl_wireid, RENDER_ATTRIB_COL, "vertcol");
+	glBindAttribLocation(r->gl_solidid, RENDER_ATTRIB_POS, "vertpos");
+	glBindAttribLocation(r->gl_solidid, RENDER_ATTRIB_COL, "vertcol");
 	
-	glBindAttribLocation(r->gl_meshid, RENDER_ATTRIB_POS, "vertpos");
-	glBindAttribLocation(r->gl_meshid, RENDER_ATTRIB_NOR, "vertcol");
+	glBindAttribLocation(r->gl_txtrdid, RENDER_ATTRIB_POS, "vertpos");
+	glBindAttribLocation(r->gl_txtrdid, RENDER_ATTRIB_NOR, "vertcol");
+	glBindAttribLocation(r->gl_txtrdid, RENDER_ATTRIB_TEX, "verttex");
 	
 	// flag shaders for deletion
-	shader_delete(wirevert);
-	shader_delete(wirefrag);
-	shader_delete(meshvert);
-	shader_delete(meshfrag);
+	shader_delete(solidvert);
+	shader_delete(solidfrag);
+	shader_delete(txtrdvert);
+	shader_delete(txtrdfrag);
 	
 	// assign program ID's to render types
-	shader[RENDER_TYPE_POINTS] = r->gl_wireid;
-	shader[RENDER_TYPE_LINES] = r->gl_wireid;
-	shader[RENDER_TYPE_MESH] = r->gl_meshid;
+	shader[RENDER_TYPE_SOLID] = r->gl_solidid;
+	shader[RENDER_TYPE_TXTRD] = r->gl_txtrdid;
 }
