@@ -1,5 +1,5 @@
 all: game.o render.o shader.o
-	gcc src/main.c -o asteroid obj/game.o obj/render.o obj/shader.o -lGL -lglfw3 -lX11 -lXxf86vm -lXrandr -lpthread -lXi -lm -Wall -Wextra
+	gcc src/main.c -o asteroids obj/game.o obj/render.o obj/shader.o -lGL -lglfw3 -lX11 -lXxf86vm -lXrandr -lpthread -lXi -lm -Wall -Wextra
 
 game.o: src/game.c
 	gcc -c src/game.c -o obj/game.o

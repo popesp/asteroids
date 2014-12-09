@@ -8,7 +8,9 @@ int main(int argc, char** argv)
 	(void)argc;
 	(void)argv;
 	
-	game_startup(&game);
+	if (!game_startup(&game))
+		return 0;
+	
 	game_mainloop(&game);
 	game_shutdown(&game);
 	

@@ -62,6 +62,9 @@ static void scroll(GLFWwindow* window, double xoffset, double yoffset)
 
 static void update(struct game* game)
 {
+	// check for callback events
+	glfwPollEvents();
+	
 	// update
 	
 	if (glfwWindowShouldClose(game->window.w))
