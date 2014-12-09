@@ -17,7 +17,7 @@
 
 #define	GAME_KEY_ESC			27
 
-#define	GAME_FLAG_NONE			0x00
+#define	GAME_FLAG_INIT			0x00
 #define	GAME_FLAG_TERMINATED	0x01
 
 
@@ -30,8 +30,9 @@ struct game
 };
 
 
-int game_startup(int argc, char** argv);
-void game_mainloop(void);
+int game_startup(struct game* game);
+void game_mainloop(struct game* game);
+void game_shutdown(struct game* game);
 
 
 #endif

@@ -11,9 +11,12 @@
 #define	WINDOW_DEFAULT_FAR			1000.f
 
 
+struct GLFWwindow;
+
+
 struct window
 {
-	int glut_id;
+	struct GLFWwindow* w;
 	
 	int width, height;
 	
