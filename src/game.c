@@ -94,8 +94,6 @@ int game_startup(struct game* game)
 	window_init(&game->window, GAME_DEFAULT_WIDTH, GAME_DEFAULT_HEIGHT);
 	
 	// ensure a compatible context
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 	glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
 	
 	// create window handle
