@@ -34,7 +34,7 @@ void renderable_init(struct renderable* r, int gl_drawmode, unsigned char type, 
 			attrib(RENDER_ATTRIB_COL, RENDER_ATTRIBSIZE_COL, vertsize[type], RENDER_ATTRIBSIZE_POS);
 			break;
 		
-		case RENDER_TYPE_TEXTURED:
+		case RENDER_TYPE_TXTRD:
 			attrib(RENDER_ATTRIB_POS, RENDER_ATTRIBSIZE_POS, vertsize[type], 0);
 			attrib(RENDER_ATTRIB_NOR, RENDER_ATTRIBSIZE_NOR, vertsize[type], RENDER_ATTRIBSIZE_POS);
 			attrib(RENDER_ATTRIB_TEX, RENDER_ATTRIBSIZE_TEX, vertsize[type], RENDER_ATTRIBSIZE_POS + RENDER_ATTRIBSIZE_NOR);

@@ -1,15 +1,17 @@
 #include	"game.h"
 
+#include	<GL/glfw3.h>
 #include	"render/render.h"
 #include	"render/window.h"
 
 
 static void resize(GLFWwindow* window, int width, int height);
+static void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods);
 static void cursor(GLFWwindow* window, double x, double y);
 static void mouse(GLFWwindow* window, int button, int action, int mods);
-static void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods);
-static void world_mv(float* mat);
-static void render(void);
+static void scroll(GLFWwindow* window, double xoffset, double yoffset);
+static void update(struct game* game);
+static void render(struct game* game);
 
 
 static void resize(GLFWwindow* window, int width, int height)
@@ -58,6 +60,14 @@ static void scroll(GLFWwindow* window, double xoffset, double yoffset)
 	// process mouse scroll
 }
 
+static void update(struct game* game)
+{
+	// update
+	
+	if (glfwWindowShouldClose(game->window.w))
+		game->flags |= GAME_FLAG_TERMINATED;
+}
+
 static void render(struct game* game)
 {
 	float transform[16], worldmv[16], inverse[16];
@@ -78,7 +88,7 @@ int game_startup(struct game* game)
 		return 0;
 	
 	// initialize window object
-	window_init(&game.window, GAME_DEFAULT_WIDTH, GAME_DEFAULT_HEIGHT);
+	window_init(&game->window, GAME_DEFAULT_WIDTH, GAME_DEFAULT_HEIGHT);
 	
 	// ensure a compatible context
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -110,11 +120,11 @@ int game_startup(struct game* game)
 	glViewport(0, 0, game->window.width, game->window.height);
 	
 	// set callback functions for the window
-	glfwSetWindowSizeCallback(game->window, &resize);
-	glfwSetKeyCallback(game->window, &keyboard);
-	glfwSetCursorPosCallback(game->window, &cursor);
-	glfwSetMouseButtonCallback(game->window, &mouse);
-	glfwSetScrollCallback(game->window, &scroll);
+	glfwSetWindowSizeCallback(game->window.w, &resize);
+	glfwSetKeyCallback(game->window.w, &keyboard);
+	glfwSetCursorPosCallback(game->window.w, &cursor);
+	glfwSetMouseButtonCallback(game->window.w, &mouse);
+	glfwSetScrollCallback(game->window.w, &scroll);
 	
 	// initialize renderer
 	if (!renderer_init(&game->renderer))
@@ -129,30 +139,42 @@ int game_startup(struct game* game)
 
 void game_mainloop(struct game* game)
 {
-	double time, elapsed;
+	double time, timer, elapsed;
 	unsigned fps, ups;
 	
 	time = 0.;
 	fps = ups = 0u;
 	
+	// initialize timer
 	glfwSetTime(0.);
 	
 	// loop until terminated
 	while (!(game->flags&GAME_FLAG_TERMINATED))
 	{
+		// get elapsed time for current iteration
 		elapsed = glfwGetTime();
 		glfwSetTime(0.);
 		
 		time += elapsed;
+		timer += elapsed;
 		
-		while (time >= 1.)
+		// update as much as necessary
+		while (time >= GAME_SPU)
 		{
-			time -= 1.;
-			fps = 0;
+			update(game);
+			ups++;
+			time -= GAME_SPU;
 		}
 		
-		frame(app);
+		// every second, reset fps and ups counters
+		while (timer >= 1.)
+		{
+			timer -= 1.;
+			fps = ups = 0u;
+		}
 		
+		// render as frequently as possible
+		render(game);
 		fps++;
 	}
 }

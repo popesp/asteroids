@@ -11,9 +11,12 @@
 #define	GAME_DEFAULT_X			100
 #define	GAME_DEFAULT_Y			100
 
-#define	GAME_CLEARCOLOR			0.f, 0.1f, 0.1f
-
 #define	GAME_TITLE				"Asteroids"
+
+#define	GAME_UPS				60.f
+#define	GAME_SPU				1.f/GAME_UPS
+
+#define	GAME_CLEARCOLOR			0.f, 0.1f, 0.1f
 
 #define	GAME_KEY_ESC			27
 
