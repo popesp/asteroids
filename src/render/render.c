@@ -1,6 +1,7 @@
 #include	"render.h"
 
-#include	<GL/glut.h>
+#include	<stdlib.h>
+#include	<GL/glfw3.h>
 #include	"shader.h"
 
 
