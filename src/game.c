@@ -87,9 +87,17 @@ static void render(struct game* game)
 
 int game_startup(struct game* game)
 {
+	int error;
+	
 	// initialize GLFW
 	if (glfwInit() != GL_TRUE)
 		return 0;
+	
+	if ((error = glewInit()) != GLEW_OK)
+	{
+		printf("Error initializing GLEW: %s\n", glewGetErrorString(error));
+		return 0;
+	}
 	
 	// initialize window object
 	window_init(&game->window, GAME_DEFAULT_WIDTH, GAME_DEFAULT_HEIGHT);
