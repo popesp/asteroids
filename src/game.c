@@ -1,5 +1,6 @@
 #include	"game.h"
 
+#include	<GL/glew.h>
 #include	<GL/glfw3.h>
 #include	"render/render.h"
 #include	"render/window.h"
