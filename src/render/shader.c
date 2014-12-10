@@ -1,5 +1,6 @@
 #include	"shader.h"
 
+#include	<GL/glew.h>
 #include	<GL/glfw3.h>
 #include	<stdio.h>
 #include	<stdlib.h>
@@ -14,25 +15,25 @@ int shader_create(char* filename, unsigned char type)
 	int len;
 	int id;
 	int i;
-	
+
 	if (type == SHADER_VERTEX)
 		id = glCreateShader(GL_VERTEX_SHADER);
 	else if (type == SHADER_FRAGMENT)
 		id = glCreateShader(GL_FRAGMENT_SHADER);
 	else
 		return 0;
-	
+
 	file = fopen(filename, "rb");
 	if (file == NULL)
 	{
 		printf("Error opening %s.\n", filename);
 		return 0;
 	}
-	
+
 	fseek(file, 0, SEEK_END);
 	len = ftell(file);
 	fseek(file, 0, SEEK_SET);
-	
+
 	text = (char*)malloc(len+1);
 	if (fread(text, 1, len, file) != len)
 	{
@@ -40,13 +41,13 @@ int shader_create(char* filename, unsigned char type)
 		printf("Error reading from %s.\n", filename);
 		return 0;
 	}
-	
+
 	text[len] = '\0';
-	
+
 	glShaderSource(id, 1, &text, NULL);
 	glCompileShader(id);
 	free(text);
-	
+
 	glGetShaderiv(id, GL_COMPILE_STATUS, &result);
 	if (result == GL_FALSE)
 	{
@@ -57,7 +58,7 @@ int shader_create(char* filename, unsigned char type)
 		free(info);
 		return 0;
 	}
-	
+
 	return id;
 }
 
@@ -66,12 +67,12 @@ int shader_program(int vertex, int fragment)
 	char* info;
 	int result;
 	int id;
-	
+
 	id = glCreateProgram();
 	glAttachShader(id, vertex);
 	glAttachShader(id, fragment);
 	glLinkProgram(id);
-	
+
 	glGetProgramiv(id, GL_LINK_STATUS, &result);
 	if (result == GL_FALSE)
 	{
@@ -82,7 +83,7 @@ int shader_program(int vertex, int fragment)
 		free(info);
 		return 0;
 	}
-	
+
 	return id;
 }
 
