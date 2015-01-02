@@ -15,25 +15,25 @@ int shader_create(char* filename, unsigned char type)
 	int len;
 	int id;
 	int i;
-
+	
 	if (type == SHADER_VERTEX)
 		id = glCreateShader(GL_VERTEX_SHADER);
 	else if (type == SHADER_FRAGMENT)
 		id = glCreateShader(GL_FRAGMENT_SHADER);
 	else
 		return 0;
-
+	
 	file = fopen(filename, "rb");
 	if (file == NULL)
 	{
 		printf("Error opening %s.\n", filename);
 		return 0;
 	}
-
+	
 	fseek(file, 0, SEEK_END);
 	len = ftell(file);
 	fseek(file, 0, SEEK_SET);
-
+	
 	text = (char*)malloc(len+1);
 	if (fread(text, 1, len, file) != len)
 	{
@@ -41,13 +41,13 @@ int shader_create(char* filename, unsigned char type)
 		printf("Error reading from %s.\n", filename);
 		return 0;
 	}
-
+	
 	text[len] = '\0';
-
-	glShaderSource(id, 1, &text, NULL);
+	
+	glShaderSource(id, 1, (const char**)&text, NULL);
 	glCompileShader(id);
 	free(text);
-
+	
 	glGetShaderiv(id, GL_COMPILE_STATUS, &result);
 	if (result == GL_FALSE)
 	{
@@ -58,33 +58,40 @@ int shader_create(char* filename, unsigned char type)
 		free(info);
 		return 0;
 	}
-
+	
 	return id;
 }
 
 int shader_program(int vertex, int fragment)
 {
-	char* info;
-	int result;
 	int id;
-
+	
 	id = glCreateProgram();
 	glAttachShader(id, vertex);
 	glAttachShader(id, fragment);
-	glLinkProgram(id);
+	
+	return id;
+}
 
-	glGetProgramiv(id, GL_LINK_STATUS, &result);
+int shader_link(int program)
+{
+	char* info;
+	int result;
+	
+	glLinkProgram(program);
+	
+	glGetProgramiv(program, GL_LINK_STATUS, &result);
 	if (result == GL_FALSE)
 	{
-		glGetProgramiv(id, GL_INFO_LOG_LENGTH, &result);
+		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &result);
 		info = (char*)malloc(result);
-		glGetProgramInfoLog(id, result, NULL, info);
+		glGetProgramInfoLog(program, result, NULL, info);
 		printf("Failed to link shader program:\n%s\n", info);
 		free(info);
 		return 0;
 	}
-
-	return id;
+	
+	return 1;
 }
 
 void shader_delete(int id)

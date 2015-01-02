@@ -8,7 +8,7 @@ struct texturesheet
 	
 	int id_gl;
 	
-	unsigned char* bytes;
+	unsigned char* data;
 };
 
 struct texture
@@ -27,6 +27,8 @@ struct texturemanager
 
 
 void texture_init(struct texturemanager* tm, int num_textures);
+void texture_destroy(struct texturemanager* tm);
+
 void texture_loadsheet(struct texturemanager* tm, char* filename);
 
 

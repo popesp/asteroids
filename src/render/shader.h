@@ -8,6 +8,7 @@
 
 int shader_create(char* filename, unsigned char type);
 int shader_program(int vertex, int fragment);
+int shader_link(int program);
 void shader_delete(int id);
 
 

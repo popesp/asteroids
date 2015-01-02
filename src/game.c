@@ -2,8 +2,11 @@
 
 #include	<GL/glew.h>
 #include	<GL/glfw3.h>
+#include	<stdio.h>
+#include	<stdlib.h>
 #include	"render/render.h"
-#include	"render/window.h"
+#include	"render/sprite.h"
+#include	"render/window2d.h"
 
 
 static void resize(GLFWwindow* window, int width, int height);
@@ -31,7 +34,57 @@ static void keyboard(GLFWwindow* window, int key, int scancode, int action, int 
 	
 	game = (struct game*)glfwGetWindowUserPointer(window);
 	
-	// process keyboard input
+	if (action == GLFW_PRESS)
+	{
+		switch (key)
+		{
+			case GLFW_KEY_ESCAPE:
+				game->flags |= GAME_FLAG_TERMINATED;
+				break;
+			
+			case GLFW_KEY_W:
+				game->input.w = 1;
+				break;
+			
+			case GLFW_KEY_A:
+				game->input.a = 1;
+				break;
+			
+			case GLFW_KEY_S:
+				game->input.s = 1;
+				break;
+			
+			case GLFW_KEY_D:
+				game->input.d = 1;
+				break;
+			
+			default:
+				break;
+		}
+	} else if (action == GLFW_RELEASE)
+	{
+		switch (key)
+		{
+			case GLFW_KEY_W:
+				game->input.w = 0;
+				break;
+			
+			case GLFW_KEY_A:
+				game->input.a = 0;
+				break;
+			
+			case GLFW_KEY_S:
+				game->input.s = 0;
+				break;
+			
+			case GLFW_KEY_D:
+				game->input.d = 0;
+				break;
+			
+			default:
+				break;
+		}
+	}
 }
 
 static void cursor(GLFWwindow* window, double x, double y)
@@ -63,10 +116,30 @@ static void scroll(GLFWwindow* window, double xoffset, double yoffset)
 
 static void update(struct game* game)
 {
+	int i;
+	
 	// check for callback events
 	glfwPollEvents();
 	
-	// update
+	// handle input
+	if (game->input.w)
+		game->py -= 1.f;
+	if (game->input.a)
+		game->px -= 1.f;
+	if (game->input.s)
+		game->py += 1.f;
+	if (game->input.d)
+		game->px += 1.f;
+	
+	game->sprites[0].x = game->px;
+	game->sprites[0].y = game->py;
+	game->sprites[0].rotation += 0.1f;
+	
+	// update sprite buffer
+	sprite_bufferdraw(game->sprites + 0, game->r_sprites.buffer);
+	
+	// send buffer to opengl
+	renderable_sendbuffer(&game->r_sprites);
 	
 	if (glfwWindowShouldClose(game->window.w))
 		game->flags |= GAME_FLAG_TERMINATED;
@@ -74,12 +147,10 @@ static void update(struct game* game)
 
 static void render(struct game* game)
 {
-	float transform[16], worldmv[16], inverse[16];
-	float eyepos[3];
-	
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 	
 	// render objects
+	renderable_render(&game->r_sprites, game->window.projection, 6);
 	
 	glfwSwapBuffers(game->window.w);
 }
@@ -88,22 +159,19 @@ static void render(struct game* game)
 int game_startup(struct game* game)
 {
 	int error;
+	int i;
 	
 	// initialize GLFW
 	if (glfwInit() != GL_TRUE)
 		return 0;
-	
-	if ((error = glewInit()) != GLEW_OK)
-	{
-		printf("Error initializing GLEW: %s\n", glewGetErrorString(error));
-		return 0;
-	}
 	
 	// initialize window object
 	window_init(&game->window, GAME_DEFAULT_WIDTH, GAME_DEFAULT_HEIGHT);
 	
 	// ensure a compatible context
 	glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 	
 	// create window handle
 	if ((game->window.w = glfwCreateWindow(game->window.width, game->window.height, GAME_TITLE, NULL, NULL)) == NULL)
@@ -116,6 +184,11 @@ int game_startup(struct game* game)
 	// make window's opengl context current
 	glfwMakeContextCurrent(game->window.w);
 	
+	// initialize GLEW
+	glewExperimental = GL_TRUE;
+	if ((error = glewInit()) != GLEW_OK)
+		return 0;
+	
 	// enable vsync
 	glfwSwapInterval(1);
 	
@@ -123,7 +196,8 @@ int game_startup(struct game* game)
 	glfwSetWindowUserPointer(game->window.w, (void*)game);
 	
 	// configure opengl
-	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glClearColor(GAME_CLEARCOLOR, 1.f);
 	
 	// initialize gl viewport
@@ -140,9 +214,36 @@ int game_startup(struct game* game)
 	if (!renderer_init(&game->renderer))
 		return 0;
 	
+	// initialize texture manager with 1 texture
+	texture_init(&game->tm, 1);
+	texture_loadsheet(&game->tm, GAME_FILE_SPRITESHEET);
+	game->tm.textures[0].ul = game->tm.textures[0].vt = 0.f;
+	game->tm.textures[0].ur = game->tm.textures[0].vb = 1.f;
+	
 	// initialize the renderable objects
+	renderable_init(&game->r_sprites, GL_TRIANGLES, RENDER_TYPE_TXTRD, RENDER_FLAG_DYNAMIC);
 	
 	// allocate buffers for the renderable objects
+	renderable_allocate(&game->r_sprites, GAME_MAX_SPRITES*6);
+	
+	game->input.w = 0;
+	game->input.a = 0;
+	game->input.s = 0;
+	game->input.d = 0;
+	
+	game->num_sprites = 1;
+	game->sprites = calloc(sizeof(struct sprite), game->num_sprites);
+	
+	// initialize player attributes
+	game->pw = 32.f;
+	game->ph = 32.f;
+	game->px = (float)GAME_DEFAULT_WIDTH*0.5f;
+	game->py = (float)GAME_DEFAULT_HEIGHT*0.5f;
+	
+	game->sprites[0].texture = game->tm.textures + 0;
+	game->sprites[0].width = game->pw*2.f;
+	game->sprites[0].height = game->ph*2.f;
+	game->sprites[0].rotation = 0.f;
 	
 	return 1;
 }
@@ -191,6 +292,10 @@ void game_mainloop(struct game* game)
 
 void game_shutdown(struct game* game)
 {
+	texture_destroy(&game->tm);
+	renderable_deallocate(&game->r_sprites);
+	free(game->sprites);
+	
 	glfwDestroyWindow(game->window.w);
 	glfwTerminate();
 }

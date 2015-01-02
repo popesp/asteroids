@@ -1,17 +1,14 @@
 #version	140
 
 
-in		vec3		pass_color;
+in		vec2		pass_texcoords;
 
-out		vec3		frag_color;
+out		vec4		frag_color;
 
-uniform	vec3		ambient;
-uniform	vec3		diffuse;
-uniform	vec3		specular;
-uniform	float		shininess;
+uniform	sampler2D	diffuse;
 
 
 void main()
 {
-	frag_color = pass_color;
+	frag_color = texture2D(diffuse, pass_texcoords);
 }

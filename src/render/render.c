@@ -1,16 +1,16 @@
 #include	"render.h"
 
-#include	<stdlib.h>
 #include	<GL/glew.h>
 #include	<GL/glfw3.h>
+#include	<stdlib.h>
 #include	"shader.h"
 
 
 static int vertsize[2] = {
-	RENDER_ATTRIBSIZE_POS + RENDER_ATTRIBSIZE_COL,							// solid
-	RENDER_ATTRIBSIZE_POS + RENDER_ATTRIBSIZE_NOR + RENDER_ATTRIBSIZE_TEX};	// textured
+	RENDER_ATTRIBSIZE_POS + RENDER_ATTRIBSIZE_COL,	// solid
+	RENDER_ATTRIBSIZE_POS + RENDER_ATTRIBSIZE_TEX};	// textured
 
-static int shader[2];
+/*static*/ 
 
 static inline void attrib(int index, int size, int vsize, int offs)
 {
@@ -38,8 +38,7 @@ void renderable_init(struct renderable* r, int gl_drawmode, unsigned char type, 
 		
 		case RENDER_TYPE_TXTRD:
 			attrib(RENDER_ATTRIB_POS, RENDER_ATTRIBSIZE_POS, vertsize[type], 0);
-			attrib(RENDER_ATTRIB_NOR, RENDER_ATTRIBSIZE_NOR, vertsize[type], RENDER_ATTRIBSIZE_POS);
-			attrib(RENDER_ATTRIB_TEX, RENDER_ATTRIBSIZE_TEX, vertsize[type], RENDER_ATTRIBSIZE_POS + RENDER_ATTRIBSIZE_NOR);
+			attrib(RENDER_ATTRIB_TEX, RENDER_ATTRIBSIZE_TEX, vertsize[type], RENDER_ATTRIBSIZE_POS);
 			break;
 		
 		default:
@@ -60,12 +59,17 @@ void renderable_allocate(struct renderable* r, int num_verts)
 	
 	r->buffer = calloc(vertsize[r->type] * num_verts, sizeof(float));
 	
-	if (r->flags & RENDER_FLAGS_DYNAMIC)
+	if (r->flags & RENDER_FLAG_DYNAMIC)
 		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertsize[r->type] * num_verts, NULL, GL_DYNAMIC_DRAW);
 	else
 		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertsize[r->type] * num_verts, NULL, GL_STATIC_DRAW);
 	
 	r->num_verts = num_verts;
+}
+
+void renderable_deallocate(struct renderable* r)
+{
+	free(r->buffer);
 }
 
 void renderable_sendbuffer(struct renderable* r)
@@ -74,7 +78,7 @@ void renderable_sendbuffer(struct renderable* r)
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * vertsize[r->type] * r->num_verts, r->buffer);
 }
 
-void renderable_render(struct renderable* r, float* transform)
+void renderable_render(struct renderable* r, float* transform, int num_verts)
 {
 	glUseProgram(shader[r->type]);
 	glBindVertexArray(r->gl_vao);
@@ -83,7 +87,10 @@ void renderable_render(struct renderable* r, float* transform)
 	if (r->uniforms != NULL)
 		r->uniforms();
 	
-	glDrawArrays(r->gl_drawmode, 0, r->num_verts);
+	if (num_verts)
+		glDrawArrays(r->gl_drawmode, 0, num_verts);
+	else
+		glDrawArrays(r->gl_drawmode, 0, r->num_verts);
 }
 
 
@@ -102,19 +109,22 @@ int renderer_init(struct renderer* r)
 	if (!(txtrdfrag = shader_create(RENDER_SHADER_TXTRDFRAG, SHADER_FRAGMENT)))
 		return 0;
 	
-	// link programs
-	if (!(r->gl_solidid = shader_program(solidvert, solidfrag)))
-		return 0;
-	if (!(r->gl_txtrdid = shader_program(txtrdvert, txtrdfrag)))
-		return 0;
+	// create shader programs
+	r->id_glsolid = shader_program(solidvert, solidfrag);
+	r->id_gltxtrd = shader_program(txtrdvert, txtrdfrag);
 	
 	// bind attribute locations
-	glBindAttribLocation(r->gl_solidid, RENDER_ATTRIB_POS, "vertpos");
-	glBindAttribLocation(r->gl_solidid, RENDER_ATTRIB_COL, "vertcol");
+	glBindAttribLocation(r->id_glsolid, RENDER_ATTRIB_POS, "vertpos");
+	glBindAttribLocation(r->id_glsolid, RENDER_ATTRIB_COL, "vertcol");
 	
-	glBindAttribLocation(r->gl_txtrdid, RENDER_ATTRIB_POS, "vertpos");
-	glBindAttribLocation(r->gl_txtrdid, RENDER_ATTRIB_NOR, "vertcol");
-	glBindAttribLocation(r->gl_txtrdid, RENDER_ATTRIB_TEX, "verttex");
+	glBindAttribLocation(r->id_gltxtrd, RENDER_ATTRIB_POS, "vertpos");
+	glBindAttribLocation(r->id_gltxtrd, RENDER_ATTRIB_TEX, "verttex");
+	
+	// link programs
+	if (!shader_link(r->id_glsolid))
+		return 0;
+	if (!shader_link(r->id_gltxtrd))
+		return 0;
 	
 	// flag shaders for deletion
 	shader_delete(solidvert);
@@ -123,6 +133,6 @@ int renderer_init(struct renderer* r)
 	shader_delete(txtrdfrag);
 	
 	// assign program ID's to render types
-	shader[RENDER_TYPE_SOLID] = r->gl_solidid;
-	shader[RENDER_TYPE_TXTRD] = r->gl_txtrdid;
+	shader[RENDER_TYPE_SOLID] = r->id_glsolid;
+	shader[RENDER_TYPE_TXTRD] = r->id_gltxtrd;
 }
